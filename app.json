@@ -1,5 +1,6 @@
 {
   "expo": {
+    "scheme": "shelfieapp",
     "name": "dedexo-app",
     "slug": "dedexo-app",
     "version": "1.0.0",
@@ -20,10 +21,14 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.lucasmarrtt.dedexoapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
