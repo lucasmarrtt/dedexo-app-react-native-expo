@@ -9,7 +9,7 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import haversine from 'haversine';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,18 +20,29 @@ const CENTER = { latitude: -16.0859, longitude: -48.5136 };
 const RADIUS_KM = 50;
 const PRICE_PER_KM = 1.8;
 
+// fatores conforme slider: baixa (0), média (1), alta (2)
+const infestationFactor = [0.85, 1.0, 1.35];
+
 const BudgetDetailsPage = () => {
   const router = useRouter();
+  const rawParams = useLocalSearchParams();
+
+  const label = rawParams.label;
+  const price = Number(rawParams.price);
+  const perMeter = rawParams.perMeter === 'true';
 
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [distance, setDistance] = useState(null);
 
+  // Estados que controlam o cálculo dinâmico
   const [area, setArea] = useState(0);
-  const [level, setLevel] = useState(1);
+  const [level, setLevel] = useState(1); // Default: Média
 
   const levelLabel = ['Baixa', 'Média', 'Alta'][level];
+
+  // ---------------- ENDEREÇO ----------------
 
   const fetchSuggestions = async (input) => {
     setQuery(input);
@@ -52,7 +63,7 @@ const BudgetDetailsPage = () => {
             latitude: f.geometry.coordinates[1],
             longitude: f.geometry.coordinates[0],
           },
-          display_name: `${f.properties.name || ''}, ${f.properties.city || ''}, ${f.properties.country || ''}`,
+          display_name: `${f.properties.name || ''}, ${f.properties.city || ''}`,
         }))
         .filter((f) => haversine(CENTER, f.coords, { unit: 'km' }) <= RADIUS_KM);
 
@@ -87,6 +98,35 @@ const BudgetDetailsPage = () => {
     setDistance(haversine(CENTER, place.coords, { unit: 'km' }));
   };
 
+  // ---------------- CÁLCULO DINÂMICO ----------------
+
+  const calculateServicePrice = () => {
+    if (!area || area <= 0) return 0;
+
+    // Lógica para Cupins (Preço por m²)
+    if (perMeter) {
+      return area * price * infestationFactor[level];
+    }
+
+    // Lógica para Ratos, Baratas, Formigas (Preço Base + Extra por área)
+    let base = price * infestationFactor[level];
+    let extra = 0;
+
+    if (area > 60) {
+      const extraArea = area - 60;
+      // Adiciona R$ 30 a cada 50m² adicionais
+      const blocks = Math.ceil(extraArea / 50);
+      extra = blocks * 30;
+    }
+
+    return base + extra;
+  };
+
+  // Valores calculados em tempo real durante o render
+  const serviceValue = calculateServicePrice();
+  const travelCost = distance ? distance * PRICE_PER_KM : 0;
+  const total = serviceValue + travelCost;
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
@@ -103,9 +143,16 @@ const BudgetDetailsPage = () => {
           />
         </View>
 
-        {/* ENDEREÇO + OVERLAY */}
-        <View style={styles.addressBox}>
+        {/* PRAGA SELECIONADA */}
+        <View style={styles.pragaBox}>
+          <Text style={styles.praga}>{label}</Text>
+          <Text style={styles.base}>
+            Preço base: R$ {price} {perMeter ? '/ m²' : ''}
+          </Text>
+        </View>
 
+        {/* ENDEREÇO */}
+        <View style={styles.addressBox}>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
@@ -135,7 +182,6 @@ const BudgetDetailsPage = () => {
               />
             </View>
           )}
-
         </View>
 
         {/* SLIDERS */}
@@ -145,19 +191,14 @@ const BudgetDetailsPage = () => {
 
           <Slider
             minimumValue={0}
-            maximumValue={5000}
+            maximumValue={1000}
             step={10}
             value={area}
-            onValueChange={setArea}
+            onValueChange={(val) => setArea(val)} // Atualiza o estado em tempo real
             minimumTrackTintColor="#7ed957"
             maximumTrackTintColor="#ddd"
             thumbTintColor="#000"
-            style={{
-              width: '100%',
-              transform: [{ scaleX: 1.06 }, ], // ajusta até alinhar
-            }}
-
-    
+            style={{ width: '100%', height: 40, transform: [{ scaleX: 1.06 }, ], }}
           />
 
           <Text style={styles.label}>Infestação: {levelLabel}</Text>
@@ -167,29 +208,28 @@ const BudgetDetailsPage = () => {
             maximumValue={2}
             step={1}
             value={level}
-            onValueChange={setLevel}
+            onValueChange={(val) => setLevel(val)} // Atualiza o estado em tempo real
             minimumTrackTintColor="#7ed957"
             maximumTrackTintColor="#ddd"
             thumbTintColor="#000"
-            style={{
-              width: '100%',
-              transform: [{ scaleX: 1.06 }], // ajusta até alinhar
-            }}
+            style={{ width: '100%', height: 40, transform: [{ scaleX: 1.06 }, ],}}
           />
-
         </View>
 
         {/* RESUMO */}
         {selectedAddress && (
           <View style={styles.summary}>
-            <Text>Endereço: {selectedAddress.display_name}</Text>
-            <Text>Distância: {distance?.toFixed(2)} km</Text>
-            <Text>Locomoção: R$ {(distance * PRICE_PER_KM).toFixed(2)}</Text>
-            <Text style={{ fontWeight: 'bold', }}>Valor: R$ 00,00 </Text>
+            <Text>Distância: {distance.toFixed(2)} km</Text>
+            <Text>Locomoção: R$ {travelCost.toFixed(2)}</Text>
+            <Text>Serviço ({label}): R$ {serviceValue.toFixed(2)}</Text>
+
+            <Text style={styles.total}>
+              VALOR TOTAL: R$ {total.toFixed(2)}
+            </Text>
           </View>
         )}
 
-        {/* CONTINUAR */}
+        {/* BOTÃO */}
         {selectedAddress && (
           <Pressable style={styles.button}>
             <Text style={styles.buttonText}>FINALIZAR</Text>
@@ -206,112 +246,22 @@ export default BudgetDetailsPage;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f6f5f3' },
   container: { flex: 1 },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    marginBottom: 16,
-  },
-
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f6f5f3',
-  },
-
-  logo: {
-    width: 140,
-    height: 24,
-    resizeMode: 'contain',
-  },
-
-  addressBox: {
-    paddingHorizontal: 16,
-    position: 'relative',
-    zIndex: 10,
-  },
-
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  input: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    height: 48,
-  },
-
-  iconButton: {
-    marginLeft: 8,
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: '#7ed957',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  suggestionsOverlay: {
-    position: 'absolute',
-    top: 56,
-    left: 16,
-    right: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    maxHeight: 220,
-    overflow: 'hidden',
-    elevation: 4,
-  },
-
-  suggestion: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-
-  slidersBox: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-  },
-
-
-
-
-  label: {
-    marginTop: 12,
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-
-  summary: {
-    marginTop: 16,
-    marginHorizontal: 16,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-  },
-
-  button: {
-    marginTop: 16,
-    marginHorizontal: 16,
-    padding: 16,
-    borderRadius: 32,
-    backgroundColor: '#7ed957',
-    alignItems: 'center',
-  },
-
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '900',
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: '#fff' },
+  backButton: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#f6f5f3', alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 140, height: 24, resizeMode: 'contain' },
+  pragaBox: { alignItems: 'center', marginVertical: 12 },
+  praga: { fontSize: 22, fontWeight: '900' },
+  base: { color: '#2e7d32', fontWeight: '600' },
+  addressBox: { paddingHorizontal: 16 },
+  inputContainer: { flexDirection: 'row' },
+  input: { flex: 1, backgroundColor: '#fff', borderRadius: 8, padding: 12 },
+  iconButton: { marginLeft: 8, width: 48, borderRadius: 8, backgroundColor: '#7ed957', alignItems: 'center', justifyContent: 'center' },
+  suggestionsOverlay: { backgroundColor: '#fff', borderRadius: 8, marginTop: 4, maxHeight: 220, elevation: 3, zIndex: 10 },
+  suggestion: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  slidersBox: { paddingHorizontal: 16, marginTop: 16 },
+  label: { marginTop: 12, fontWeight: '600' },
+  summary: { margin: 16, padding: 16, backgroundColor: '#fff', borderRadius: 8 },
+  total: { marginTop: 10, fontSize: 20, fontWeight: '900' },
+  button: { marginHorizontal: 16, padding: 16, borderRadius: 32, backgroundColor: '#7ed957', alignItems: 'center', marginBottom: 20 },
+  buttonText: { fontWeight: '900', fontSize: 16 },
 });
