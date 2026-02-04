@@ -152,6 +152,11 @@ const BudgetDetailsPage = () => {
             minimumTrackTintColor="#7ed957"
             maximumTrackTintColor="#ddd"
             thumbTintColor="#000"
+            style={{
+              width: '100%',
+              transform: [{ scaleX: 1.06 }, ], // ajusta até alinhar
+            }}
+
     
           />
 
@@ -166,6 +171,10 @@ const BudgetDetailsPage = () => {
             minimumTrackTintColor="#7ed957"
             maximumTrackTintColor="#ddd"
             thumbTintColor="#000"
+            style={{
+              width: '100%',
+              transform: [{ scaleX: 1.06 }], // ajusta até alinhar
+            }}
           />
 
         </View>
@@ -176,13 +185,14 @@ const BudgetDetailsPage = () => {
             <Text>Endereço: {selectedAddress.display_name}</Text>
             <Text>Distância: {distance?.toFixed(2)} km</Text>
             <Text>Locomoção: R$ {(distance * PRICE_PER_KM).toFixed(2)}</Text>
+            <Text style={{ fontWeight: 'bold', }}>Valor: R$ 00,00 </Text>
           </View>
         )}
 
         {/* CONTINUAR */}
         {selectedAddress && (
           <Pressable style={styles.button}>
-            <Text style={styles.buttonText}>CONTINUAR</Text>
+            <Text style={styles.buttonText}>FINALIZAR</Text>
           </Pressable>
         )}
 
