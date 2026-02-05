@@ -1,9 +1,9 @@
 {
   "expo": {
     "scheme": "shelfieapp",
-    "name": "dedexo-app",
-    "slug": "dedexo-app",
-    "version": "1.0.0",
+    "name": "Dedexo",
+    "slug": "Dedexo Dedetização",
+    "version": "1.0.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +14,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lucasmarrtt.dedexoapp"
     },
     "android": {
       "adaptiveIcon": {

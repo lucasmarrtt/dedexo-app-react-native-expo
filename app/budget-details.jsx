@@ -230,11 +230,23 @@ const BudgetDetailsPage = () => {
         )}
 
         {/* BOTÃO */}
-        {selectedAddress && (
-          <Pressable style={styles.button}>
-            <Text style={styles.buttonText}>FINALIZAR</Text>
-          </Pressable>
-        )}
+        <Pressable
+          style={styles.button}
+          onPress={() => router.push({
+            pathname: '/finalized-budget',
+            params: {
+              label,
+              price: serviceValue.toFixed(2),
+              travel: travelCost.toFixed(2),
+              total: total.toFixed(2),
+              area,
+              level: levelLabel,
+              address: selectedAddress.display_name,
+            }
+          })}
+        >
+          <Text style={styles.buttonText}>FINALIZAR</Text>
+        </Pressable>
 
       </View>
     </SafeAreaView>
@@ -250,18 +262,18 @@ const styles = StyleSheet.create({
   backButton: { width: 44, height: 44, borderRadius: 8, backgroundColor: '#f6f5f3', alignItems: 'center', justifyContent: 'center' },
   logo: { width: 140, height: 24, resizeMode: 'contain' },
   pragaBox: { alignItems: 'center', marginVertical: 12 },
-  praga: { fontSize: 22, fontWeight: '900' },
+  praga: { fontSize: 22, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 2, },
   base: { color: '#2e7d32', fontWeight: '600' },
-  addressBox: { paddingHorizontal: 16 },
+  addressBox: { paddingHorizontal: 16, marginBottom: 16, },
   inputContainer: { flexDirection: 'row' },
   input: { flex: 1, backgroundColor: '#fff', borderRadius: 8, padding: 12 },
   iconButton: { marginLeft: 8, width: 48, borderRadius: 8, backgroundColor: '#7ed957', alignItems: 'center', justifyContent: 'center' },
   suggestionsOverlay: { backgroundColor: '#fff', borderRadius: 8, marginTop: 4, maxHeight: 220, elevation: 3, zIndex: 10 },
   suggestion: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  slidersBox: { paddingHorizontal: 16, marginTop: 16 },
+  slidersBox: { paddingHorizontal: 16, marginTop: 16, marginBottom: 32, flex: 1 },
   label: { marginTop: 12, fontWeight: '600' },
   summary: { margin: 16, padding: 16, backgroundColor: '#fff', borderRadius: 8 },
   total: { marginTop: 10, fontSize: 20, fontWeight: '900' },
-  button: { marginHorizontal: 16, padding: 16, borderRadius: 32, backgroundColor: '#7ed957', alignItems: 'center', marginBottom: 20 },
-  buttonText: { fontWeight: '900', fontSize: 16 },
+  button: { marginHorizontal: 16, padding: 16, borderRadius: 8, backgroundColor: '#7ed957', alignItems: 'center', marginBottom: 20 },
+  buttonText: { fontWeight: '800', fontSize: 16, letterSpacing: 2, },
 });
